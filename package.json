@@ -1,0 +1,23 @@
+{
+  "name": "peer_test",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "parcel index.html --open --https"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "animejs": "^3.0.1",
+    "deepmerge": "^3.3.0",
+    "peerjs": "^1.0.0",
+    "react": "^16.8.6",
+    "react-dom": "^16.8.6"
+  },
+  "devDependencies": {
+    "postcss-modules": "^1.4.1",
+    "sass": "^1.22.3"
+  }
+}

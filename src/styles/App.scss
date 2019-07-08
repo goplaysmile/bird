@@ -1,0 +1,17 @@
+#app {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  align-content: center;
+  justify-content: center;
+  // transform: scale(2, 2);
+  // border: 1px solid;
+}
+
+#vid {
+  position: absolute;
+  width: 32px;
+  height: 40px;
+  border: 1px solid;
+}
