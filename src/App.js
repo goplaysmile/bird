@@ -23,22 +23,33 @@ function App() {
   )
 
   let updateDb = diff => {
-    console.log(`db ← ${JSON.stringify(diff)}`)
-    setDb(db => merge(db, diff))
+    setDb(db => {
+
+      if (
+        !diff
+        || db === diff
+        || !Object.keys(diff).length
+      ) return db
+
+      console.log(`db ← ${JSON.stringify(diff)}`)
+      return merge(db, diff)
+    })
   }
 
   let updateConns = conn => {
-    console.log(`conns ← ${conn.peer}`)
-
     setConns(conns => {
       if (conns[conn.peer]) return conns
+
+      console.log(`conns ← ${conn.peer}`)
 
       let onData = diff => {
         console.log(`⇜ ${JSON.stringify(diff)} // ${conn.peer}`)
         updateDb(diff)
       }
 
-      let c = {
+      conn.on('data', onData)
+
+      return {
         ...conns,
 
         [conn.peer]: {
@@ -46,10 +57,6 @@ function App() {
           onData
         }
       }
-
-      conn.on('data', onData)
-
-      return c
     })
   }
 
@@ -87,19 +94,7 @@ function App() {
 
   useEffect(
     () => {
-      let ids = Object.keys(conns)
-
-      console.log(`conns: ${JSON.stringify(ids)}`)
-
-      // ids.forEach(id => {
-      //   let {
-      //     conn,
-      //     onData
-      //   } = conns[id]
-
-      //   conn.on('data', onData)
-      // })
-
+      console.log(`conns: ${JSON.stringify(Object.keys(conns))}`)
       broad(db)
     },
     [conns]
