@@ -67,7 +67,7 @@ function App() {
 
   useEffect(
     () => {
-      let peer = new Peer(genRandId())
+      let peer = new Peer(pseudoUid())
 
       peer.on('connection', conn => {
         conn.on('open', () => onOpen(conn))
@@ -194,13 +194,9 @@ function App() {
   )
 }
 
-let genRandId = () =>
-  Date.now()
-    .toString()
-    .split('')
-    .map(n => String.fromCharCode(97 + Number(n)))
-    .join('')
-    .slice(-5)
-    .toUpperCase()
+let pseudoUid = () =>
+  Math.random()
+    .toString(36)
+    .substr(2, 5)
 
 export default App
