@@ -1,116 +1,24 @@
 import React, { useState, useRef, useEffect } from 'react'
 import anime from 'animejs'
-import Peer from 'peerjs'
-import merge from 'deepmerge'
+import Boulder from './Boulder'
 import { app, vid } from './styles/App.scss'
 
 function App() {
   let [keys, setKeys] = useState({})
   let [xy, setXy] = useState([0, 0])
   let [toConn, setToConn] = useState('')
-  let [conns, setConns] = useState({})
-  let [db, setDb] = useState({})
   let vidRef = useRef()
-  let peerRef = useRef()
+  /** @type {React.MutableRefObject<Boulder>} */
+  let bldrRef = useRef()
 
   useEffect(
     () => {
-      navigator.mediaDevices.getUserMedia({
-        audio: true
-      })
+      let bldr = new Boulder()
+      bldr.Broad({ [bldr.UID]: 'hi~!' })
+      bldrRef.current = bldr
     },
     []
   )
-
-  let updateDb = diff => {
-    setDb(db => {
-
-      if (
-        !diff
-        || db === diff
-        || !Object.keys(diff).length
-      ) return db
-
-      console.log(`db ← ${JSON.stringify(diff)}`)
-      return merge(db, diff)
-    })
-  }
-
-  let updateConns = conn => {
-    setConns(conns => {
-      if (conns[conn.peer]) return conns
-
-      console.log(`conns ← ${conn.peer}`)
-
-      let onData = diff => {
-        console.log(`⇜ ${JSON.stringify(diff)} // ${conn.peer}`)
-        updateDb(diff)
-      }
-
-      conn.on('data', onData)
-
-      return {
-        ...conns,
-
-        [conn.peer]: {
-          conn,
-          onData
-        }
-      }
-    })
-  }
-
-  let onOpen = conn => {
-    console.log(`✰ ${conn.peer}; ${Date.now()}`)
-    updateConns(conn)
-  }
-
-  useEffect(
-    () => {
-      let peer = new Peer(pseudoUid())
-
-      peer.on('connection', conn => {
-        conn.on('open', () => onOpen(conn))
-      })
-
-      console.log(`You → """ ${peer.id} """`)
-      alert(`You → """ ${peer.id} """`)
-
-      peerRef.current = peer
-
-      updateDb({ [peer.id]: 'hi~!' })
-    },
-    []
-  )
-
-  let broad = diff => {
-    updateDb(diff)
-
-    Object.values(conns).forEach(({ conn }) => {
-      console.log(`${JSON.stringify(diff)} ⇝ ${conn.peer}`)
-      conn.send(diff)
-    })
-  }
-
-  useEffect(
-    () => {
-      console.log(`conns: ${JSON.stringify(Object.keys(conns))}`)
-      broad(db)
-    },
-    [conns]
-  )
-
-  useEffect(
-    () => {
-      console.log(`db: ${JSON.stringify(db, null, 2)}`)
-    },
-    [db]
-  )
-
-  let connect = toConn => {
-    let conn = peerRef.current.connect(toConn)
-    conn.on('open', () => onOpen(conn))
-  }
 
   useEffect(
     () => {
@@ -129,7 +37,6 @@ function App() {
         // }
 
       })
-
 
     },
     [xy]
@@ -172,8 +79,10 @@ function App() {
     >
       <form
         onSubmit={e => {
+          let { current: bldr } = bldrRef
+
           e.preventDefault()
-          connect(toConn)
+          bldr.Connect(toConn)
           setToConn('')
         }}
 

@@ -1,68 +1,45 @@
 import Peer from 'peerjs'
 import merge from 'deepmerge'
 
-class Boulder {
+/**
+ * Makes your boulder instance, so you can get your database... *ROLLING*.
+ * @constructor
+ * @param {string=} uid A unique ID for this specific boulder instance to be recognized among other boulders in the community.
+ */
+function Boulder(uid) {
 
-  constructor(uid) {
-    this.peer = new Peer(uid || pseudoUid())
-    this.conns = []
-    this.db = {}
+  let peer = new Peer(uid || pseudoUID())
+  /** @type {Peer.DataConnection[]} */
+  let conns = []
+  let db = {}
 
-    let { peer, handleOpen, getUserMedia, updateDb } = this
-
-    peer.on('connection', conn => {
-      conn.on('open', () => handleOpen(conn))
-    })
-
-    getUserMedia()
-
-    console.log(`You → """ ${peer.id} """`)
-    alert(`You → """ ${peer.id} """`)
-
-    updateDb({ [peer.id]: 'hi~!' })
-  }
-
-  Connect(toConn) {
-    let { peer, handleOpen } = this
-
-    let conn = peer.connect(toConn)
-    conn.on('open', () => handleOpen(conn))
-  }
-
-  Broad(diff) {
-    let { updateDb, conns } = this
-
-    updateDb(diff)
-
-    Object.values(conns).forEach(({ conn }) => {
-      console.log(`${JSON.stringify(diff)} ⇝ ${conn.peer}`)
-      conn.send(diff)
-    })
-  }
-
-  getUserMedia() {
+  /**
+   */
+  let activateUserMedia = () => {
     navigator.mediaDevices.getUserMedia({
       audio: true
     })
   }
 
-  handleOpen(conn) {
-    let { updateConns } = this
-
+  /**
+   * @param {Peer.DataConnection} conn An incoming connection.
+   */
+  let handleOpen = conn => {
     console.log(`✰ ${conn.peer}; ${Date.now()}`)
     updateConns(conn)
   }
 
-  updateConns(conn) {
-    let { conns, db, updateDb, Broad } = this
-
+  /**
+   * @param {Peer.DataConnection} conn An incoming connection.
+   */
+  let updateConns = conn => {
     if (conns[conn.peer]) return
 
     console.log(`conns ← ${conn.peer}`)
 
     let onData = diff => {
       console.log(`⇜ ${JSON.stringify(diff)} // ${conn.peer}`)
-      updateDb(diff)
+      updateDB(diff)
     }
 
     conn.on('data', onData)
@@ -73,12 +50,13 @@ class Boulder {
     }
 
     console.log(`conns: ${JSON.stringify(Object.keys(conns))}`)
-    Broad(db)
+    this.Broad(db)
   }
 
-  updateDb(diff) {
-    let { db } = this
-
+  /**
+   * @param {Object<string, *>} diff A database-diff to be applied personally.
+   */
+  let updateDB = diff => {
     if (
       !diff
       || db === diff
@@ -86,13 +64,55 @@ class Boulder {
     ) return
 
     console.log(`db ← ${JSON.stringify(diff)}`)
-    this.db = merge(db, diff)
+    db = merge(db, diff)
     console.log(`db: ${JSON.stringify(db, null, 2)}`)
   }
 
+  /**
+   * Connects our boulder to another's.
+   * @param {string} uid Another boulder's unique ID to connect to.
+   * @public
+   */
+  this.Connect = uid => {
+    let conn = peer.connect(uid)
+    conn.on('open', () => handleOpen(conn))
+  }
+
+  /**
+   * Broadcasts a database-diff while setting it internally.
+   * @param {Object<string, *>} diff A database-diff to be applied personally and outwardly.
+   * @public
+   */
+  this.Broad = diff => {
+    updateDB(diff)
+
+    Object.values(conns).forEach(({ conn }) => {
+      console.log(`${JSON.stringify(diff)} ⇝ ${conn.peer}`)
+      conn.send(diff)
+    })
+  }
+
+  /**
+   * Gets this boulder's unique ID.
+   * @type {string}
+   * @public
+   */
+  this.UID = peer.id
+
+  // CONSTRUCTOR
+  // vvvvvvvvvvv
+
+  peer.on('connection', conn => {
+    conn.on('open', () => handleOpen(conn))
+  })
+
+  activateUserMedia()
+
+  console.log(`You → """ ${peer.id} """`)
+  alert(`You → """ ${peer.id} """`)
 }
 
-let pseudoUid = () =>
+let pseudoUID = () =>
   Math.random()
     .toString(36)
     .substr(2, 5)
