@@ -11,6 +11,7 @@ function Boulder(uid) {
   let peer = new Peer(uid || pseudoUID())
   /** @type {Peer.DataConnection[]} */
   let conns = []
+  /** @type {Object<string, *>} */
   let db = {}
 
   /**
@@ -69,6 +70,25 @@ function Boulder(uid) {
   }
 
   /**
+   * @param {string} uid A unique ID to strip.
+   * @param {Object<string, *>} db A database to strip a UID from.
+   */
+  let removeFromDB = (uid, db) => {
+    let before = Object.keys(db).length
+    delete db[uid]
+    let keys = Object.keys(db)
+    let after = keys.length
+    if (before === after) {
+      // console.log('done')
+      return
+    }
+    // console.log('recur')
+    for (let key in db) {
+      deuid(uid, db[key])
+    }
+  }
+
+  /**
    * Connects our boulder to another's.
    * @param {string} uid Another boulder's unique ID to connect to.
    * @public
@@ -76,6 +96,17 @@ function Boulder(uid) {
   this.Connect = uid => {
     let conn = peer.connect(uid)
     conn.on('open', () => handleOpen(conn))
+  }
+
+  /**
+   * Disconnects our boulder from another's.
+   * @param {string} uid Another boulder's unique ID to disconnect from.
+   * @public
+   */
+  this.Disconnect = uid => {
+    let conn = conns.find(conn => conn.peer === uid)
+    conn.close()
+    removeFromDB(uid, db)
   }
 
   /**
