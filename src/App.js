@@ -82,7 +82,13 @@ function App() {
           let { current: bldr } = bldrRef
 
           e.preventDefault()
-          bldr.Connect(toConn)
+
+          if (bldr.IsConnected(toConn)) {
+            bldr.Disconnect(toConn)
+          } else {
+            bldr.Connect(toConn)
+          }
+
           setToConn('')
         }}
 
