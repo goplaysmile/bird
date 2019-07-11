@@ -100,7 +100,21 @@ function Boulder(uid) {
   this.Connect = uid => {
     let conn = peer.connect(uid)
     conn.on('open', () => handleOpen(conn)) /* mem-leak?; not released */
-    conn.on('close', () => handleClose(conn)) /* mem-leak?; not released */
+  }
+
+  /**
+   * @param {Peer.DataConnection} conn
+   */
+  let tryCleanup = conn => {
+    if (conn.open) return
+    handleClose(conn)
+  }
+
+  let getConns = () => {
+    for (let uid in conns) {
+      tryCleanup(conns[uid].conn)
+    }
+    return conns
   }
 
   /**
@@ -167,6 +181,48 @@ function Boulder(uid) {
 
   console.log(`You → """ ${peer.id} """`)
   alert(`You → """ ${peer.id} """`)
+}
+
+function ConnPool() {
+  /**
+   * @param {Peer.DataConnection} conn
+   */
+  let tryCleanup = conn => {
+    if (conn.open) return
+    handleClose(conn)
+  }
+
+  /**
+   * @param {Peer.DataConnection} conn
+   */
+  let handleClose = conn => {
+    let { OnData } = this.Raw[conn.peer]
+
+    conn.off('data', OnData)
+
+    console.log(`conns ✘ ${conn.peer}`)
+    delete conns[conn.peer]
+
+    console.log(`conns: ${JSON.stringify(Object.keys(conns))}`)
+    cleanDB(conn.peer)
+  }
+
+  return {
+    /**
+     * @type {Object<string, {Conn: Peer.DataConnection, OnData(data: any) => void}>}
+     */
+    Raw: {},
+
+    /**
+     * @returns {Object<string, Peer.DataConnection>}
+     */
+    get All() {
+      for (let uid in this.Raw) {
+        tryCleanup(this.Raw[uid].Conn)
+      }
+      return this.Raw
+    }
+  }
 }
 
 let pseudoUID = () =>
