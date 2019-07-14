@@ -15,8 +15,8 @@ function App() {
     () => {
       let bldr = new Boulder()
 
-      bldr.Broad(
-        { [bldr.UID]: 'hi~!' }
+      bldr.add(
+        { msg: { [bldr.uid]: 'hi~!' } }
       )
 
       bldrRef.current = bldr
@@ -48,7 +48,7 @@ function App() {
 
   useEffect(
     () => {
-      console.log(`pressing ${JSON.stringify(keys)}`)
+      // console.log(`pressing ${JSON.stringify(keys)}`)
 
       let {
         ArrowUp,
@@ -87,10 +87,10 @@ function App() {
 
           e.preventDefault()
 
-          if (bldr.IsConnected(toConn)) {
-            bldr.Disconnect(toConn)
+          if (bldr.isConnected(toConn)) {
+            bldr.disconnect(toConn)
           } else {
-            bldr.Connect(toConn)
+            bldr.connect(toConn)
           }
 
           setToConn('')

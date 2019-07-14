@@ -8,7 +8,7 @@ import merge from 'deepmerge'
  */
 function Boulder(uid) {
 
-  let peer = new Peer(uid || pseudoUID())
+  let peer = new Peer(uid || pseudoUid())
   /** @type {Object<string, {conn: Peer.DataConnection, onData: (data: any) => void}>} */
   let conns = {}
   /** @type {Object<string, *>} */
@@ -45,7 +45,7 @@ function Boulder(uid) {
         return
       }
 
-      updateDB(diff)
+      applyLocalDb(diff)
     }
 
     conn.on('data', onData)
@@ -61,13 +61,13 @@ function Boulder(uid) {
     }
     console.log(`conns: ${JSON.stringify(Object.keys(conns))}`)
 
-    this.Broad(db)
+    this.add(db)
   }
 
   /**
    * @param {Object<string, *>} diff
    */
-  let updateDB = (diff) => {
+  let applyLocalDb = (diff) => {
     if (
       !diff
       || db === diff
@@ -82,24 +82,22 @@ function Boulder(uid) {
   /**
    * @param {string} uid
    */
-  let cleanDB = (uid) => {
+  let cleanDb = (uid) => {
     console.log(`db ✘ ${JSON.stringify(uid)}`)
-    cleanDB_helper(uid, db)
+    cleanDb_helper(uid, db)
     console.log(`db: ${JSON.stringify(db, null, 2)}`)
   }
   /**
    * @param {string} uid
    * @param {Object<string, *>} db
    */
-  let cleanDB_helper = (uid, db) => {
-    let before = Object.keys(db).length
-    delete db[uid]
-    let after = Object.keys(db).length
+  let cleanDb_helper = (uid, db) => {
+    if (typeof db !== 'object' || !db) return
 
-    if (before === after) return
+    delete db[uid]
 
     for (let key in db) {
-      cleanDB_helper(uid, db[key])
+      cleanDb_helper(uid, db[key])
     }
   }
 
@@ -107,7 +105,7 @@ function Boulder(uid) {
    * Connects our boulder to another's.
    * @param {string} uid Another boulder's unique ID to connect to.
    */
-  this.Connect = (uid) => {
+  this.connect = (uid) => {
     registerConn(peer.connect(uid))
   }
 
@@ -127,7 +125,7 @@ function Boulder(uid) {
     delete conns[uid]
     console.log(`conns: ${JSON.stringify(Object.keys(conns))}`)
 
-    cleanDB(uid)
+    cleanDb(uid)
   }
 
   /**
@@ -135,13 +133,13 @@ function Boulder(uid) {
    * @param {string} uid Another boulder's unique ID to see if connected.
    * @returns {boolean} Whether or not the provided unique ID is connected.
    */
-  this.IsConnected = (uid) => !!conns[uid]
+  this.isConnected = (uid) => !!conns[uid]
 
   /**
    * Disconnects our boulder from another's.
    * @param {string} uid Another boulder's unique ID to disconnect from.
    */
-  this.Disconnect = (uid) => {
+  this.disconnect = (uid) => {
     if (!conns[uid]) return
 
     conns[uid].conn.send('✘')
@@ -153,11 +151,11 @@ function Boulder(uid) {
   }
 
   /**
-   * Broadcasts a database-diff while setting it internally.
+   * Synchronizes all connected databases with the added diff.
    * @param {Object<string, *>} diff A database-diff to be applied personally and outwardly.
    */
-  this.Broad = (diff) => {
-    updateDB(diff)
+  this.add = (diff) => {
+    applyLocalDb(diff)
 
     Object.values(conns).forEach(({ conn }) => {
       console.log(`${JSON.stringify(diff)} ⇝ ${conn.peer}`)
@@ -169,7 +167,7 @@ function Boulder(uid) {
    * Gets this boulder's unique ID.
    * @type {string}
    */
-  this.UID = peer.id
+  this.uid = peer.id
 
   // CONSTRUCTOR
   // vvvvvvvvvvv
@@ -192,7 +190,7 @@ let whenOpen = (conn) =>
     }
   )
 
-let pseudoUID = () =>
+let pseudoUid = () =>
   Math.random()
     .toString(36)
     .substr(2, 5)
