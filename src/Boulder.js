@@ -33,7 +33,7 @@ function Boulder(uid) {
       return
     }
 
-    let onOpen = await conn.whenOpen()
+    let onOpen = await whenOpen(conn)
 
     console.log(`✰ ${uid}; connected @ ${Date.now()}`)
 
@@ -172,14 +172,13 @@ function Boulder(uid) {
   alert(`You → """ ${peer.id} """`)
 }
 
-Peer.prototype.DataConnection.whenOpen = function () {
-  return new Promise(
+let whenOpen = (conn) =>
+  new Promise(
     (resolve) => {
       let onOpen = () => resolve(onOpen)
-      this.on('open', onOpen)
+      conn.on('open', onOpen)
     }
   )
-}
 
 let pseudoUID = () =>
   Math.random()

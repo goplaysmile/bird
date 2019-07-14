@@ -19,5 +19,8 @@
   "devDependencies": {
     "postcss-modules": "^1.4.1",
     "sass": "^1.22.3"
-  }
+  },
+  "browserslist": [
+    "since 2017-06"
+  ]
 }
