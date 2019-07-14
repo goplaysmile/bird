@@ -25,39 +25,43 @@ function Boulder(uid) {
   /**
    * @param {Peer.DataConnection} conn
    */
-  let handleOpen = conn => {
-    console.log(`✰ ${conn.peer}; ${Date.now()}`)
-    updateConns(conn)
-  }
+  let registerConn = async (conn) => {
+    let uid = conn.peer
 
-  /**
-   * @param {Peer.DataConnection} conn
-   */
-  let updateConns = conn => {
-    if (conns[conn.peer]) return
+    if (conns[uid]) {
+      console.log(`✘ ${uid}; already connected`)
+      return
+    }
 
-    console.log(`conns ← ${conn.peer}`)
+    let onOpen = await conn.whenOpen()
 
-    let onData = diff => {
-      console.log(`⇜ ${JSON.stringify(diff)} // ${conn.peer}`)
+    console.log(`✰ ${uid}; connected @ ${Date.now()}`)
+
+    let onData = (diff) => {
+      console.log(`⇜ ${JSON.stringify(diff)} // ${uid}`)
       updateDB(diff)
     }
 
     conn.on('data', onData)
-
-    conns[conn.peer] = {
-      conn,
-      onData
+    conn.dataChannel.onclose = () => {
+      unregisterConn(conn)
     }
 
+    console.log(`conns ← ${uid}`)
+    conns[uid] = {
+      conn,
+      onOpen,
+      onData
+    }
     console.log(`conns: ${JSON.stringify(Object.keys(conns))}`)
+
     this.Broad(db)
   }
 
   /**
    * @param {Object<string, *>} diff
    */
-  let updateDB = diff => {
+  let updateDB = (diff) => {
     if (
       !diff
       || db === diff
@@ -72,7 +76,7 @@ function Boulder(uid) {
   /**
    * @param {string} uid
    */
-  let cleanDB = uid => {
+  let cleanDB = (uid) => {
     console.log(`db ✘ ${JSON.stringify(uid)}`)
     cleanDB_helper(uid, db)
     console.log(`db: ${JSON.stringify(db, null, 2)}`)
@@ -97,39 +101,27 @@ function Boulder(uid) {
    * Connects our boulder to another's.
    * @param {string} uid Another boulder's unique ID to connect to.
    */
-  this.Connect = uid => {
-    let conn = peer.connect(uid)
-    conn.on('open', () => handleOpen(conn)) /* mem-leak?; not released */
+  this.Connect = (uid) => {
+    registerConn(peer.connect(uid))
   }
 
   /**
    * @param {Peer.DataConnection} conn
    */
-  let tryCleanup = conn => {
-    if (conn.open) return
-    handleClose(conn)
-  }
+  let unregisterConn = (conn) => {
+    let uid = conn.peer
 
-  let getConns = () => {
-    for (let uid in conns) {
-      tryCleanup(conns[uid].conn)
-    }
-    return conns
-  }
+    let { onOpen, onData } = conns[uid]
 
-  /**
-   * @param {Peer.DataConnection} conn
-   */
-  let handleClose = conn => {
-    let { onData } = conns[conn.peer]
-
+    conn.off('open', onOpen)
     conn.off('data', onData)
+    delete conn.dataChannel.onclose
 
-    console.log(`conns ✘ ${conn.peer}`)
-    delete conns[conn.peer]
-
+    console.log(`conns ✘ ${uid}`)
+    delete conns[uid]
     console.log(`conns: ${JSON.stringify(Object.keys(conns))}`)
-    cleanDB(conn.peer)
+
+    cleanDB(uid)
   }
 
   /**
@@ -137,25 +129,22 @@ function Boulder(uid) {
    * @param {string} uid Another boulder's unique ID to see if connected.
    * @returns {boolean} Whether or not the provided unique ID is connected.
    */
-  this.IsConnected = uid => !!conns[uid]
+  this.IsConnected = (uid) => !!conns[uid]
 
   /**
    * Disconnects our boulder from another's.
    * @param {string} uid Another boulder's unique ID to disconnect from.
    */
-  this.Disconnect = uid => {
+  this.Disconnect = (uid) => {
     if (!conns[uid]) return
-
-    let { conn } = conns[uid]
-    conn.close()
-    // handleClose(conn)
+    conns[uid].conn.close()
   }
 
   /**
    * Broadcasts a database-diff while setting it internally.
    * @param {Object<string, *>} diff A database-diff to be applied personally and outwardly.
    */
-  this.Broad = diff => {
+  this.Broad = (diff) => {
     updateDB(diff)
 
     Object.values(conns).forEach(({ conn }) => {
@@ -174,7 +163,7 @@ function Boulder(uid) {
   // vvvvvvvvvvv
 
   peer.on('connection', conn => {
-    conn.on('open', () => handleOpen(conn))
+    registerConn(conn)
   })
 
   activateUserMedia()
@@ -183,46 +172,13 @@ function Boulder(uid) {
   alert(`You → """ ${peer.id} """`)
 }
 
-function ConnPool() {
-  /**
-   * @param {Peer.DataConnection} conn
-   */
-  let tryCleanup = conn => {
-    if (conn.open) return
-    handleClose(conn)
-  }
-
-  /**
-   * @param {Peer.DataConnection} conn
-   */
-  let handleClose = conn => {
-    let { OnData } = this.Raw[conn.peer]
-
-    conn.off('data', OnData)
-
-    console.log(`conns ✘ ${conn.peer}`)
-    delete conns[conn.peer]
-
-    console.log(`conns: ${JSON.stringify(Object.keys(conns))}`)
-    cleanDB(conn.peer)
-  }
-
-  return {
-    /**
-     * @type {Object<string, {Conn: Peer.DataConnection, OnData(data: any) => void}>}
-     */
-    Raw: {},
-
-    /**
-     * @returns {Object<string, Peer.DataConnection>}
-     */
-    get All() {
-      for (let uid in this.Raw) {
-        tryCleanup(this.Raw[uid].Conn)
-      }
-      return this.Raw
+Peer.prototype.DataConnection.whenOpen = function () {
+  return new Promise(
+    (resolve) => {
+      let onOpen = () => resolve(onOpen)
+      this.on('open', onOpen)
     }
-  }
+  )
 }
 
 let pseudoUID = () =>
