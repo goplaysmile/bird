@@ -14,7 +14,11 @@ function App() {
   useEffect(
     () => {
       let bldr = new Boulder()
-      bldr.Broad({ [bldr.UID]: 'hi~!' })
+
+      bldr.Broad(
+        { [bldr.UID]: 'hi~!' }
+      )
+
       bldrRef.current = bldr
     },
     []

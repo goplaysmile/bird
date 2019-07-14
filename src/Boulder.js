@@ -39,6 +39,12 @@ function Boulder(uid) {
 
     let onData = (diff) => {
       console.log(`⇜ ${JSON.stringify(diff)} // ${uid}`)
+
+      if (diff === '✘') {
+        conn.close()
+        return
+      }
+
       updateDB(diff)
     }
 
@@ -137,7 +143,13 @@ function Boulder(uid) {
    */
   this.Disconnect = (uid) => {
     if (!conns[uid]) return
-    conns[uid].conn.close()
+
+    conns[uid].conn.send('✘')
+
+    setTimeout(
+      () => conns[uid].conn.close(),
+      1 /* ms */
+    )
   }
 
   /**
