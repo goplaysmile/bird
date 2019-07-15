@@ -15,9 +15,7 @@ function App() {
     () => {
       let bldr = new Boulder()
 
-      bldr.add(
-        { msg: { [bldr.uid]: 'hi~!' } }
-      )
+      bldr.add({ msg: { [bldr.uid]: 'hi~!' } })
 
       bldrRef.current = bldr
     },
@@ -26,8 +24,12 @@ function App() {
 
   useEffect(
     () => {
+      let { current: bldr } = bldrRef
+
       console.log('anime\'ing...')
       let [x, y] = xy
+
+      bldr.add({ xy: { [bldr.uid]: { x, y } } })
 
       anime({
         targets: vidRef.current,

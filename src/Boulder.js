@@ -22,6 +22,28 @@ function Boulder(uid) {
     })
   }
 
+  /** @type {Object<string, ((v) => void)[]>} */
+  let evs = {}
+
+  /**
+   * Fires the passed-in function when the path's value changes.
+   * @param {(v) => void} fn The function to be fired.
+   * @param {Object<string, *>} path The path that will trigger the function.
+   */
+  this.on = (fn, path) => {
+    let ev = JSON.stringify(path)
+    evs[ev] = [...evs[ev] || [], fn]
+  }
+
+  /**
+   * Releases callbacks associated with the path.
+   * @param {Object<string, *>} path The path to be cleared.
+   */
+  this.off = (path) => {
+    let ev = JSON.stringify(path)
+    delete evs[ev]
+  }
+
   /**
    * @param {Peer.DataConnection} conn
    */
@@ -77,6 +99,8 @@ function Boulder(uid) {
     console.log(`db ← ${JSON.stringify(diff)}`)
     db = merge(db, diff)
     console.log(`db: ${JSON.stringify(db, null, 2)}`)
+
+    // evs[]
   }
 
   /**
@@ -180,7 +204,12 @@ function Boulder(uid) {
 
   console.log(`You → """ ${peer.id} """`)
   alert(`You → """ ${peer.id} """`)
+
+  // ^^^^^^^^^^^
+  // CONSTRUCTOR
 }
+
+let __ = 0
 
 let whenOpen = (conn) =>
   new Promise(
@@ -196,3 +225,6 @@ let pseudoUid = () =>
     .substr(2, 5)
 
 export default Boulder
+export {
+  __
+}
