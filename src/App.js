@@ -1,19 +1,30 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, createRef, useEffect } from 'react'
 import anime from 'animejs'
-import Boulder from './Boulder'
+import Boulder, { __ } from './Boulder'
 import { app, vid } from './styles/App.scss'
 
 function App() {
   let [keys, setKeys] = useState({})
-  let [xy, setXy] = useState([0, 0])
+  let [db, setDb] = useState({})
   let [toConn, setToConn] = useState('')
-  let vidRef = useRef()
+  /** @type {React.MutableRefObject<Object<string, React.RefObject>>} */
+  let vidsRef = useRef({})
   /** @type {React.MutableRefObject<Boulder>} */
   let bldrRef = useRef()
 
   useEffect(
     () => {
       let bldr = new Boulder()
+
+      bldr.on(
+        db => {
+          for (let uid in db.xy) {
+            vidsRef.current[uid] = vidsRef.current[uid] || createRef()
+          }
+
+          setDb(db)
+        }
+      )
 
       bldr.add({ msg: { [bldr.uid]: 'hi~!' } })
 
@@ -24,32 +35,30 @@ function App() {
 
   useEffect(
     () => {
-      let { current: bldr } = bldrRef
-
       console.log('anime\'ing...')
-      let [x, y] = xy
 
-      bldr.add({ xy: { [bldr.uid]: { x, y } } })
+      for (let uid in db.xy) {
+        anime({
+          targets: vidsRef.current[uid],
+          translateX: db.xy[uid].x * 32,
+          translateY: db.xy[uid].y * 32,
+          easing: 'linear',
+          duration: 500,
 
-      anime({
-        targets: vidRef.current,
-        translateX: x * 32,
-        translateY: y * 32,
-        easing: 'linear',
-        duration: 500,
+          // changeComplete() {
+          //   setKeys({})
+          // }
 
-        // changeComplete() {
-        //   setKeys({})
-        // }
-
-      })
-
+        })
+      }
     },
-    [xy]
+    [db.xy]
   )
 
   useEffect(
     () => {
+      let { current: bldr } = bldrRef
+
       // console.log(`pressing ${JSON.stringify(keys)}`)
 
       let {
@@ -59,10 +68,14 @@ function App() {
         ArrowLeft
       } = keys
 
-      if (ArrowUp) setXy(([x, y]) => [x, y - 1])
-      if (ArrowRight) setXy(([x, y]) => [x + 1, y])
-      if (ArrowDown) setXy(([x, y]) => [x, y + 1])
-      if (ArrowLeft) setXy(([x, y]) => [x - 1, y])
+      let { x, y } = (db.xy || {})[bldr.uid] || { x: 0, y: 0 }
+
+      if (ArrowUp) y -= 1
+      if (ArrowRight) x += 1
+      if (ArrowDown) y += 1
+      if (ArrowLeft) x -= 1
+
+      bldr.add({ xy: { [bldr.uid]: { x, y } } })
     },
     [keys]
   )
@@ -105,11 +118,15 @@ function App() {
         />
       </form>
 
-      <video
-        ref={vidRef}
-        id={vid}
-        autoPlay
-      />
+      {
+        Object.keys(db.xy || {}).map(uid => {
+          <video
+            ref={vidsRef.current[uid]}
+            id={vid}
+            autoPlay
+          />
+        })
+      }
 
     </div>
   )

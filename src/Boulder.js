@@ -31,6 +31,7 @@ function Boulder(uid) {
    * @param {Object<string, *>} path The path that will trigger the function.
    */
   this.on = (fn, path) => {
+    path = path || __
     let ev = JSON.stringify(path)
     evs[ev] = [...evs[ev] || [], fn]
   }
@@ -100,7 +101,10 @@ function Boulder(uid) {
     db = merge(db, diff)
     console.log(`db: ${JSON.stringify(db, null, 2)}`)
 
-    // evs[]
+    let ev = JSON.stringify(__)
+    for (let i in evs[ev]) {
+      evs[ev][i](db)
+    }
   }
 
   /**
@@ -209,6 +213,7 @@ function Boulder(uid) {
   // CONSTRUCTOR
 }
 
+/** @type {*} */
 let __ = 0
 
 let whenOpen = (conn) =>
