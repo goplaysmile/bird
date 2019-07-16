@@ -214,7 +214,7 @@ function Boulder(uid) {
 }
 
 /** @type {*} */
-let __ = 0
+let __ = '\u0007'
 
 let whenOpen = (conn) =>
   new Promise(
@@ -228,6 +228,24 @@ let pseudoUid = () =>
   Math.random()
     .toString(36)
     .substr(2, 5)
+
+function blankKeyPath(path) {
+  if (path === __) return []
+  if (typeof path !== 'object' && path) return [__]
+  let [[k, v]] = Object.entries(path)
+  if (v === __) return [k]
+  return [k, ...blankKeyPath(v)]
+}
+
+function getBlank(obj, path) {
+  return getBlank_helper(obj, blankKeyPath(path))
+}
+function getBlank_helper(obj, keyPath) {
+  if (!keyPath.length) return obj
+  let [key, ...rest] = keyPath
+  if (!rest.length) return obj[key]
+  return getBlank_helper(obj[key], rest)
+}
 
 export default Boulder
 export {

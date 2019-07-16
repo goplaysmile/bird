@@ -39,7 +39,7 @@ function App() {
 
       for (let uid in db.xy) {
         anime({
-          targets: vidsRef.current[uid],
+          targets: vidsRef.current[uid].current,
           translateX: db.xy[uid].x * 32,
           translateY: db.xy[uid].y * 32,
           easing: 'linear',
@@ -119,13 +119,14 @@ function App() {
       </form>
 
       {
-        Object.keys(db.xy || {}).map(uid => {
+        Object.keys(db.xy || {}).map(uid =>
           <video
+            key={uid}
             ref={vidsRef.current[uid]}
             id={vid}
             autoPlay
           />
-        })
+        )
       }
 
     </div>
