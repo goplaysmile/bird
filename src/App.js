@@ -5,7 +5,7 @@ import { app, vid } from './styles/App.scss'
 
 function App() {
   let [keys, setKeys] = useState({})
-  let [db, setDb] = useState({})
+  let [xy, setXy] = useState({})
   let [toConn, setToConn] = useState('')
   /** @type {React.MutableRefObject<Object<string, React.RefObject>>} */
   let vidsRef = useRef({})
@@ -17,12 +17,18 @@ function App() {
       let bldr = new Boulder()
 
       bldr.on(
-        db => {
-          for (let uid in db.xy) {
+        ({ xy }) => {
+          for (let uid in xy) {
             vidsRef.current[uid] = vidsRef.current[uid] || createRef()
           }
 
-          setDb(db)
+          setXy(xy || {})
+
+          for (let uid in vidsRef.current) {
+            if (xy[uid]) continue
+            delete vidsRef.current[uid]
+            setTimeout(() => setXy(xy => ({ ...xy })), 1)
+          }
         }
       )
 
@@ -37,11 +43,11 @@ function App() {
     () => {
       console.log('anime\'ing...')
 
-      for (let uid in db.xy) {
+      for (let uid in xy) {
         anime({
           targets: vidsRef.current[uid].current,
-          translateX: db.xy[uid].x * 32,
-          translateY: db.xy[uid].y * 32,
+          translateX: xy[uid].x * 32,
+          translateY: xy[uid].y * 32,
           easing: 'linear',
           duration: 500,
 
@@ -52,7 +58,7 @@ function App() {
         })
       }
     },
-    [db.xy]
+    [xy]
   )
 
   useEffect(
@@ -68,7 +74,7 @@ function App() {
         ArrowLeft
       } = keys
 
-      let { x, y } = (db.xy || {})[bldr.uid] || { x: 0, y: 0 }
+      let { x, y } = xy[bldr.uid] || { x: 0, y: 0 }
 
       if (ArrowUp) y -= 1
       if (ArrowRight) x += 1
@@ -119,7 +125,7 @@ function App() {
       </form>
 
       {
-        Object.keys(db.xy || {}).map(uid =>
+        Object.keys(xy).map(uid =>
           <video
             key={uid}
             ref={vidsRef.current[uid]}
@@ -132,10 +138,5 @@ function App() {
     </div>
   )
 }
-
-let pseudoUid = () =>
-  Math.random()
-    .toString(36)
-    .substr(2, 5)
 
 export default App

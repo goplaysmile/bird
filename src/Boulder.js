@@ -56,10 +56,6 @@ function Boulder(uid) {
       return
     }
 
-    let onOpen = await whenOpen(conn)
-
-    console.log(`✰ ${uid}; connected @ ${Date.now()}`)
-
     let onData = (diff) => {
       console.log(`⇜ ${JSON.stringify(diff)} // ${uid}`)
 
@@ -72,6 +68,10 @@ function Boulder(uid) {
     }
 
     conn.on('data', onData)
+
+    let onOpen = await whenOpen(conn)
+    console.log(`✰ ${uid}; connected @ ${Date.now()}`)
+
     conn.dataChannel.onclose = () => {
       unregisterConn(conn)
     }
@@ -101,7 +101,14 @@ function Boulder(uid) {
     db = merge(db, diff)
     console.log(`db: ${JSON.stringify(db, null, 2)}`)
 
-    let ev = JSON.stringify(__)
+    fire(__)
+  }
+
+  /**
+   * @param {Object<string, *>} path
+   */
+  let fire = (path) => {
+    let ev = JSON.stringify(path)
     for (let i in evs[ev]) {
       evs[ev][i](db)
     }
@@ -114,6 +121,8 @@ function Boulder(uid) {
     console.log(`db ✘ ${JSON.stringify(uid)}`)
     cleanDb_helper(uid, db)
     console.log(`db: ${JSON.stringify(db, null, 2)}`)
+
+    fire(__)
   }
   /**
    * @param {string} uid
@@ -174,7 +183,7 @@ function Boulder(uid) {
 
     setTimeout(
       () => conns[uid].conn.close(),
-      1 /* ms */
+      100 /* ms */
     )
   }
 
