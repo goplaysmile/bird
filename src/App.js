@@ -3,6 +3,8 @@ import anime from 'animejs'
 import Boulder, { __ } from './Boulder'
 import { app, vid } from './styles/App.scss'
 
+let { pow, abs, sqrt } = Math
+
 function App() {
   let [keys, setKeys] = useState({})
   let [xy, setXy] = useState({})
@@ -15,6 +17,13 @@ function App() {
   useEffect(
     () => {
       let bldr = new Boulder()
+
+      bldr.auto = ({ xy }, us, them) => {
+        let { ux, uy } = xy[us]
+        let { tx, ty } = xy[them]
+        let dist = sqrt(pow(abs(ux - tx), 2) + pow(abs(uy - ty), 2))
+        return dist <= 11
+      }
 
       bldr.on(
         ({ xy }) => {

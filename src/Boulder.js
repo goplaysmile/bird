@@ -26,6 +26,15 @@ function Boulder(uid) {
   let evs = {}
 
   /**
+   * The filter to automatically connect other boulders by.
+   * If a new boulder is connected, both relay respective auto-filters
+   * of their connected boulders to each other to see who can connect
+   * to whom within the network.
+   * @type {(db: Object<string, *>, us: string, them: string) => Boolean}
+   */
+  this.auto
+
+  /**
    * Fires the passed-in function when the path's value changes.
    * @param {(v) => void} fn The function to be fired.
    * @param {Object<string, *>} path The path that will trigger the function.
@@ -70,7 +79,7 @@ function Boulder(uid) {
     conn.on('data', onData)
 
     let onOpen = await whenOpen(conn)
-    console.log(`✰ ${uid}; connected @ ${Date.now()}`)
+    console.log(`✰ ${uid}; connected, checking neighbors...`)
 
     conn.dataChannel.onclose = () => {
       unregisterConn(conn)
