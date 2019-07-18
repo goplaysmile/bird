@@ -18,7 +18,7 @@ function App() {
     () => {
       let bldr = new Boulder()
 
-      bldr.auto = ({ xy }, us, them) => {
+      bldr.ok = ({ xy }, us, them) => {
         let { ux, uy } = xy[us]
         let { tx, ty } = xy[them]
         let dist = sqrt(pow(abs(ux - tx), 2) + pow(abs(uy - ty), 2))
@@ -74,7 +74,9 @@ function App() {
     () => {
       let { current: bldr } = bldrRef
 
-      // console.log(`pressing ${JSON.stringify(keys)}`)
+      console.log(`pressing ${JSON.stringify(keys)}`)
+
+      if (!Object.keys(keys).length && xy[bldr.uid]) return
 
       let {
         ArrowUp,

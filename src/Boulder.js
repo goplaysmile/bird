@@ -32,7 +32,7 @@ function Boulder(uid) {
    * to whom within the network.
    * @type {(db: Object<string, *>, us: string, them: string) => Boolean}
    */
-  this.auto
+  this.ok
 
   /**
    * Fires the passed-in function when the path's value changes.
@@ -73,6 +73,12 @@ function Boulder(uid) {
         return
       }
 
+      if (diff['⨝']) {
+        console.log('checking for valid uid(s) based on ok-filter...')
+        console.log(JSON.stringify(diff))
+        return
+      }
+
       applyLocalDb(diff)
     }
 
@@ -93,6 +99,7 @@ function Boulder(uid) {
     }
     console.log(`conns: ${JSON.stringify(Object.keys(conns))}`)
 
+    conns[uid].conn.send({ '⨝': { x: 1, y: 2 } })
     this.add(db)
   }
 
