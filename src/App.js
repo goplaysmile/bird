@@ -3,7 +3,7 @@ import anime from 'animejs'
 import Boulder, { __ } from './Boulder'
 import { app, vid } from './styles/App.scss'
 
-let { pow, abs, sqrt } = Math
+let { pow, sqrt } = Math
 
 function App() {
   let [keys, setKeys] = useState({})
@@ -18,12 +18,15 @@ function App() {
     () => {
       let bldr = new Boulder()
 
-      bldr.ok = ({ xy }, us, them) => {
-        let { ux, uy } = xy[us]
-        let { tx, ty } = xy[them]
-        let dist = sqrt(pow(abs(ux - tx), 2) + pow(abs(uy - ty), 2))
-        return dist <= 11
-      }
+      bldr.ok(
+        (xy, us, them) => {
+          let { x: ux, y: uy } = xy[us]
+          let { x: tx, y: ty } = xy[them]
+          let dist = sqrt(pow(tx - ux, 2) + pow(ty - uy, 2))
+          return dist <= 11
+        },
+        { xy: __ }
+      )
 
       bldr.on(
         ({ xy }) => {

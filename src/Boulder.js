@@ -25,14 +25,23 @@ function Boulder(uid) {
   /** @type {Object<string, ((v) => void)[]>} */
   let evs = {}
 
+  /** @type {(us: string, them: string) => Boolean} */
+  let ok
+
   /**
    * The filter to automatically connect other boulders by.
    * If a new boulder is connected, both relay respective auto-filters
    * of their connected boulders to each other to see who can connect
    * to whom within the network.
-   * @type {(db: Object<string, *>, us: string, them: string) => Boolean}
+   * @param {(v: Object<string, *>, us: string, them: string) => Boolean} filt The filter to be applied.
+   * @param {Object<string, *>} path Points to what should be filtered by.
    */
-  this.ok
+  this.ok = (filt, path) => {
+    ok = (us, them) => {
+      let v = getBlank(db, path)
+      filt(v, us, them)
+    }
+  }
 
   /**
    * Fires the passed-in function when the path's value changes.
