@@ -9,18 +9,18 @@ import merge from 'deepmerge'
 function Boulder(uid) {
 
   let peer = new Peer(uid || pseudoUid())
-  /** @type {Object<string, {conn: Peer.DataConnection, onData: (data: any) => void}>} */
+  /** @type {Object<string, {dataConn: Peer.DataConnection, onData: (data: any) => void, stream: MediaStream}>} */
   let conns = {}
   /** @type {Object<string, *>} */
   let db = {}
 
   /**
    */
-  let activateUserMedia = () => {
+  let activateUserMedia = () =>
     navigator.mediaDevices.getUserMedia({
+      video: true,
       audio: true
     })
-  }
 
   /** @type {Object<string, ((v) => void)[]>} */
   let evs = {}
@@ -64,10 +64,11 @@ function Boulder(uid) {
   }
 
   /**
-   * @param {Peer.DataConnection} conn
+   * @param {Peer.DataConnection} dataConn
+   * @param {Peer.MediaConnection} mediaConn
    */
-  let registerConn = async (conn) => {
-    let uid = conn.peer
+  let registerConn = async (dataConn, mediaConn) => {
+    let uid = dataConn.peer
 
     if (conns[uid]) {
       console.log(`✘ ${uid}; already connected`)
@@ -78,7 +79,7 @@ function Boulder(uid) {
       console.log(`⇜ ${JSON.stringify(diff)} // ${uid}`)
 
       if (diff === '✘') {
-        conn.close()
+        dataConn.close()
         return
       }
 
@@ -91,24 +92,26 @@ function Boulder(uid) {
       applyLocalDb(diff)
     }
 
-    conn.on('data', onData)
+    dataConn.on('data', onData)
 
-    let onOpen = await whenOpen(conn)
+    let onOpen = await whenOpen(dataConn)
+    let stream = await whenStreaming(mediaConn)
     console.log(`✰ ${uid}; connected, checking neighbors...`)
 
-    conn.dataChannel.onclose = () => {
-      unregisterConn(conn)
+    dataConn.dataChannel.onclose = () => {
+      unregisterConn(dataConn)
     }
 
     console.log(`conns ← ${uid}`)
     conns[uid] = {
-      conn,
+      dataConn,
+      stream,
       onOpen,
       onData
     }
     console.log(`conns: ${JSON.stringify(Object.keys(conns))}`)
 
-    conns[uid].conn.send({ '⨝': { x: 1, y: 2 } })
+    conns[uid].dataConn.send({ '⨝': { x: 1, y: 2 } })
     this.add(db)
   }
 
@@ -167,21 +170,24 @@ function Boulder(uid) {
    * Connects our boulder to another's.
    * @param {string} uid Another boulder's unique ID to connect to.
    */
-  this.connect = (uid) => {
-    registerConn(peer.connect(uid))
+  this.connect = async (uid) => {
+    registerConn(
+      peer.connect(uid),
+      peer.call(uid, await pendingStream)
+    )
   }
 
   /**
-   * @param {Peer.DataConnection} conn
+   * @param {Peer.DataConnection} dataConn
    */
-  let unregisterConn = (conn) => {
-    let uid = conn.peer
+  let unregisterConn = (dataConn) => {
+    let uid = dataConn.peer
 
     let { onOpen, onData } = conns[uid]
 
-    conn.off('open', onOpen)
-    conn.off('data', onData)
-    delete conn.dataChannel.onclose
+    dataConn.off('open', onOpen)
+    dataConn.off('data', onData)
+    delete dataConn.dataChannel.onclose
 
     console.log(`conns ✘ ${uid}`)
     delete conns[uid]
@@ -204,10 +210,10 @@ function Boulder(uid) {
   this.disconnect = (uid) => {
     if (!conns[uid]) return
 
-    conns[uid].conn.send('✘')
+    conns[uid].dataConn.send('✘')
 
     setTimeout(
-      () => conns[uid].conn.close(),
+      () => conns[uid].dataConn.close(),
       100 /* ms */
     )
   }
@@ -219,9 +225,9 @@ function Boulder(uid) {
   this.add = (diff) => {
     applyLocalDb(diff)
 
-    Object.values(conns).forEach(({ conn }) => {
-      console.log(`${JSON.stringify(diff)} ⇝ ${conn.peer}`)
-      conn.send(diff)
+    Object.values(conns).forEach(({ dataConn }) => {
+      console.log(`${JSON.stringify(diff)} ⇝ ${dataConn.peer}`)
+      dataConn.send(diff)
     })
   }
 
@@ -234,11 +240,11 @@ function Boulder(uid) {
   // CONSTRUCTOR
   // vvvvvvvvvvv
 
-  peer.on('connection', conn => {
-    registerConn(conn)
+  peer.on('connection', dataConn => {
+    registerConn(dataConn)
   })
 
-  activateUserMedia()
+  let pendingStream = activateUserMedia()
 
   console.log(`You → """ ${peer.id} """`)
   alert(`You → """ ${peer.id} """`)
@@ -250,12 +256,25 @@ function Boulder(uid) {
 /** @type {*} */
 let __ = '\u0007'
 
-let whenOpen = (conn) =>
+/**
+ * @param {Peer.DataConnection} dataConn
+ * @returns {Promise<() => void>}
+ */
+let whenOpen = (dataConn) =>
   new Promise(
     (resolve) => {
       let onOpen = () => resolve(onOpen)
-      conn.on('open', onOpen)
+      dataConn.on('open', onOpen)
     }
+  )
+
+/**
+ * @param {Peer.MediaConnection} mediaConn
+ * @returns {Promise<MediaStream>}
+ */
+let whenStreaming = (mediaConn) =>
+  new Promise(
+    (resolve) => mediaConn.on('stream', resolve)
   )
 
 let pseudoUid = () =>
