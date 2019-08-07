@@ -1,6 +1,6 @@
 import React, { useState, useRef, createRef, useEffect } from 'react'
 import anime from 'animejs'
-import Boulder, { __ } from './Boulder'
+import { Call } from './Chestnut'
 import { app, vid } from './styles/App.scss'
 
 let { pow, sqrt } = Math
@@ -11,42 +11,42 @@ function App() {
   let [toConn, setToConn] = useState('')
   /** @type {React.MutableRefObject<Object<string, React.RefObject>>} */
   let vidsRef = useRef({})
-  /** @type {React.MutableRefObject<Boulder>} */
-  let bldrRef = useRef()
+  // /** @type {React.MutableRefObject<Boulder>} */
+  // let bldrRef = useRef()
 
   useEffect(
     () => {
-      let bldr = new Boulder()
+      // let bldr = new Boulder()
 
-      bldr.ok(
-        (xy, us, them) => {
-          let { x: ux, y: uy } = xy[us]
-          let { x: tx, y: ty } = xy[them]
-          let dist = sqrt(pow(tx - ux, 2) + pow(ty - uy, 2))
-          return dist <= 11
-        },
-        { xy: __ }
-      )
+      // bldr.ok(
+      //   (xy, us, them) => {
+      //     let { x: ux, y: uy } = xy[us]
+      //     let { x: tx, y: ty } = xy[them]
+      //     let dist = sqrt(pow(tx - ux, 2) + pow(ty - uy, 2))
+      //     return dist <= 11
+      //   },
+      //   { xy: __ }
+      // )
 
-      bldr.on(
-        ({ xy }) => {
-          for (let uid in xy) {
-            vidsRef.current[uid] = vidsRef.current[uid] || createRef()
-          }
+      // bldr.on(
+      //   ({ xy }) => {
+      //     for (let uid in xy) {
+      //       vidsRef.current[uid] = vidsRef.current[uid] || createRef()
+      //     }
 
-          setXy(xy || {})
+      //     setXy(xy || {})
 
-          for (let uid in vidsRef.current) {
-            if (xy[uid]) continue
-            delete vidsRef.current[uid]
-            setTimeout(() => setXy(xy => ({ ...xy })), 1)
-          }
-        }
-      )
+      //     for (let uid in vidsRef.current) {
+      //       if (xy[uid]) continue
+      //       delete vidsRef.current[uid]
+      //       setTimeout(() => setXy(xy => ({ ...xy })), 1)
+      //     }
+      //   }
+      // )
 
-      bldr.add({ msg: { [bldr.uid]: 'hi~!' } })
+      // bldr.add({ msg: { [bldr.uid]: 'hi~!' } })
 
-      bldrRef.current = bldr
+      // bldrRef.current = bldr
     },
     []
   )
@@ -75,27 +75,27 @@ function App() {
 
   useEffect(
     () => {
-      let { current: bldr } = bldrRef
+      // let { current: bldr } = bldrRef
 
-      console.log(`pressing ${JSON.stringify(keys)}`)
+      // console.log(`pressing ${JSON.stringify(keys)}`)
 
-      if (!Object.keys(keys).length && xy[bldr.uid]) return
+      // if (!Object.keys(keys).length && xy[bldr.uid]) return
 
-      let {
-        ArrowUp,
-        ArrowRight,
-        ArrowDown,
-        ArrowLeft
-      } = keys
+      // let {
+      //   ArrowUp,
+      //   ArrowRight,
+      //   ArrowDown,
+      //   ArrowLeft
+      // } = keys
 
-      let { x, y } = xy[bldr.uid] || { x: 0, y: 0 }
+      // let { x, y } = xy[bldr.uid] || { x: 0, y: 0 }
 
-      if (ArrowUp) y -= 1
-      if (ArrowRight) x += 1
-      if (ArrowDown) y += 1
-      if (ArrowLeft) x -= 1
+      // if (ArrowUp) y -= 1
+      // if (ArrowRight) x += 1
+      // if (ArrowDown) y += 1
+      // if (ArrowLeft) x -= 1
 
-      bldr.add({ xy: { [bldr.uid]: { x, y } } })
+      // bldr.add({ xy: { [bldr.uid]: { x, y } } })
     },
     [keys]
   )
@@ -118,6 +118,14 @@ function App() {
     >
       <form
         onSubmit={e => {
+          e.preventDefault()
+
+          Call(toConn)
+
+          setToConn('')
+
+          return
+
           let { current: bldr } = bldrRef
 
           e.preventDefault()
