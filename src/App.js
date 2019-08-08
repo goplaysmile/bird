@@ -1,6 +1,6 @@
 import React, { useState, useRef, createRef, useEffect } from 'react'
 import anime from 'animejs'
-import { Call } from './Chestnut'
+import Chestnut from './Chestnut'
 import { app, vid } from './styles/App.scss'
 
 let { pow, sqrt } = Math
@@ -13,9 +13,24 @@ function App() {
   let vidsRef = useRef({})
   // /** @type {React.MutableRefObject<Boulder>} */
   // let bldrRef = useRef()
+  /** @type {React.MutableRefObject<Chestnut>} */
+  let chestRef = useRef()
 
   useEffect(
     () => {
+      let chest = new Chestnut()
+      chest.OurStream.then(
+        (stream) => {
+          console.log(`Our stream arrived!`)
+        }
+      )
+      chest.TheirStream.then(
+        (stream) => {
+          console.log(`Their stream arrived!`)
+        }
+      )
+      chestRef.current = chest
+
       // let bldr = new Boulder()
 
       // bldr.ok(
@@ -120,7 +135,9 @@ function App() {
         onSubmit={e => {
           e.preventDefault()
 
-          Call(toConn)
+          let { current: chest } = chestRef
+
+          chest.Call(toConn)
 
           setToConn('')
 
