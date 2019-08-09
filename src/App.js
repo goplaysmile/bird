@@ -1,4 +1,7 @@
-import React, { useState, useRef, createRef, useEffect } from 'react'
+import React, {
+  useState, useRef, createRef, useEffect, MutableRefObject, RefObject
+} from 'react'
+
 import anime from 'animejs'
 import Chestnut from './Chestnut'
 import { app, vid } from './styles/App.scss'
@@ -9,24 +12,20 @@ function App() {
   let [keys, setKeys] = useState({})
   let [xy, setXy] = useState({})
   let [toConn, setToConn] = useState('')
-  /** @type {React.MutableRefObject<Object<string, React.RefObject>>} */
+  /** @type {MutableRefObject<Object<string, RefObject>>} */
   let vidsRef = useRef({})
-  // /** @type {React.MutableRefObject<Boulder>} */
+  // /** @type {MutableRefObject<Boulder>} */
   // let bldrRef = useRef()
-  /** @type {React.MutableRefObject<Chestnut>} */
+  /** @type {MutableRefObject<Chestnut>} */
   let chestRef = useRef()
 
   useEffect(
     () => {
       let chest = new Chestnut()
-      chest.OurStream.then(
-        (stream) => {
-          console.log(`Our stream arrived!`)
-        }
-      )
-      chest.TheirStream.then(
-        (stream) => {
-          console.log(`Their stream arrived!`)
+      chest.Stream.then(
+        ({ id, stream }) => {
+          console.log(`${id} stream arrived!`)
+          vidsRef.current[id] = vidsRef.current[id] || createRef()
         }
       )
       chestRef.current = chest

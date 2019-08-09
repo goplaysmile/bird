@@ -1,19 +1,37 @@
 import Peer, { MediaConnection } from "peerjs"
 
-export default class Chestnut {
-    OurStream: Promise<MediaStream>
-    private ourStreamResolver: (stream: MediaStream) => void
-    TheirStream: Promise<MediaStream>
-    private theirStreamResolver: (stream: MediaStream) => void
+type UserStream = { id: string, stream: MediaStream }
+type StreamResolver = (payload: UserStream) => void
+
+class ChestnutStream {
+    Stream: Promise<UserStream>
+
+    private resolver: (payload: UserStream) => void
+
+    protected get Resolver() {
+        let resolve = this.resolver
+        this.Stream = new Promise(
+            (resolve) => this.resolver = resolve
+        )
+        return resolve
+    }
+
+    protected set Resolver(value: StreamResolver) {
+        this.resolver = value
+    }
+}
+
+export default class Chestnut extends ChestnutStream {
 
     private peer: Peer
 
     constructor() {
-        this.OurStream = new Promise(
-            (resolve) => this.ourStreamResolver = resolve
-        )
-        this.TheirStream = new Promise(
-            (resolve) => this.theirStreamResolver = resolve
+        super()
+
+        this.handleStream.bind(this)
+
+        this.Stream = new Promise(
+            (resolve) => this.Resolver = resolve
         )
 
         this.peer = new Peer()
@@ -26,13 +44,20 @@ export default class Chestnut {
         this.listen()
     }
 
+    get ID(): string {
+        return this.peer.id
+    }
+
     async Call(id: string) {
         console.log("Chestnut: calling...")
         try {
             let stream = await this.whenMediaStreams()
 
             let call = this.peer.call(id, stream)
-            call.on("stream", this.handleStream.bind(this))
+            call.on(
+                "stream",
+                (stream) => this.handleStream(id, stream)
+            )
         } catch (e) {
             console.error("Chestnut: failed to call", e)
         }
@@ -55,7 +80,10 @@ export default class Chestnut {
             let stream = await this.whenMediaStreams()
 
             call.answer(stream)
-            call.on("stream", this.handleStream.bind(this))
+            call.on(
+                "stream",
+                (stream) => this.handleStream(call.peer, stream)
+            )
         } catch (e) {
             console.error("Chestnut: failed to handle call", e)
         }
@@ -71,7 +99,7 @@ export default class Chestnut {
                         audio: true,
                     })
                     resolve(stream)
-                    this.ourStreamResolver(stream)
+                    this.Resolver({ id: this.ID, stream })
                 } catch (e) {
                     reject(e)
                 }
@@ -81,14 +109,10 @@ export default class Chestnut {
         }
     }
 
-    private handleStream(stream: MediaStream) {
+    private handleStream(id: string, stream: MediaStream) {
         console.log(`Chestnut: handling ${stream.id} stream...`)
         try {
-            let resolve = this.theirStreamResolver
-            this.TheirStream = new Promise((resolve) => {
-                this.theirStreamResolver = resolve
-            })
-            resolve(stream)
+            this.Resolver({ id, stream })
         } catch (e) {
             console.error("Chestnut: failed to handle stream", e)
         }
